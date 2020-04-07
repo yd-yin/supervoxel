@@ -1,3 +1,4 @@
+#include <iostream>
 #include "codelibrary/base/log.h"
 #include "codelibrary/geometry/io/xyz_io.h"
 #include "codelibrary/geometry/point_cloud/pca_estimate_normals.h"
@@ -61,13 +62,79 @@ void WritePoints(const char* filename,
 //    system(filename);
 }
 
-int main() {
+
+/**
+ * Save point clouds with segmentation labels into the file.
+ */
+void WritePoints_label(const char* filename,
+                 int n_supervoxels,
+                 const cl::Array<cl::RPoint3D>& points,
+                 const cl::Array<int>& labels) {
+    // cl::Array<cl::RGB32Color> colors(points.size());
+    // std::mt19937 random;
+    // cl::Array<cl::RGB32Color> supervoxel_colors(n_supervoxels);
+    // for (int i = 0; i < n_supervoxels; ++i) {
+    //     supervoxel_colors[i] = cl::RGB32Color(random());
+    // }
+    // for (int i = 0; i < points.size(); ++i) {
+    //     colors[i] = supervoxel_colors[labels[i]];
+    // }
+
+    if (cl::geometry::io::WriteXYZPoints(filename, points, labels)) {
+        LOG(INFO) << "The points are written into " << filename;
+    }
+
+//    system(filename);
+}
+
+
+/**
+ * Save point clouds with index and segmentation labels into the file.
+ */
+void WritePoints(const char* filename,
+                 int n_supervoxels,
+                 const cl::Array<int>& idx,
+                 const cl::Array<cl::RPoint3D>& points,
+                 const cl::Array<int>& labels) {
+    // cl::Array<cl::RGB32Color> colors(points.size());
+    // std::mt19937 random;
+    // cl::Array<cl::RGB32Color> supervoxel_colors(n_supervoxels);
+    // for (int i = 0; i < n_supervoxels; ++i) {
+    //     supervoxel_colors[i] = cl::RGB32Color(random());
+    // }
+    // for (int i = 0; i < points.size(); ++i) {
+    //     colors[i] = supervoxel_colors[labels[i]];
+    // }
+
+    if (cl::geometry::io::WriteXYZPoints(filename, idx, points, labels)) {
+        LOG(INFO) << "The points are written into " << filename;
+    }
+
+//    system(filename);
+}
+
+
+
+int main(int argc, char *argv[]) {
     LOG_ON(INFO);
 
-    const std::string filename = "test.xyz";
+    std::string filename;
+    std::string savename_tmp;
+    if(argc < 2){
+        filename = "test.xyz";
+        savename_tmp = "out_vccs_knn.xyz";
+    }
+    else{
+        assert(argc == 4);
+        filename = argv[1];   
+        savename_tmp = argv[2];
+    }
+    const std::string savename = savename_tmp;
+
 
     cl::Array<cl::RPoint3D> points;
     cl::Array<cl::RGB32Color> colors;
+    cl::Array<int> idx;
 
     LOG(INFO) << "Reading points from " << filename << "...";
     if (!cl::geometry::io::ReadXYZPoints(filename.c_str(), &points, &colors)) {
@@ -102,66 +169,73 @@ int main() {
     }
     kdtree.SwapPoints(&points);
 
-    LOG(INFO) << "Start supervoxel segmentation...";
+    // LOG(INFO) << "Start supervoxel segmentation...";
 
-    cl::Array<PointWithNormal> oriented_points(n_points);
-    for (int i = 0; i < n_points; ++i) {
-        oriented_points[i].x = points[i].x;
-        oriented_points[i].y = points[i].y;
-        oriented_points[i].z = points[i].z;
-        oriented_points[i].normal = normals[i];
-    }
+    // cl::Array<PointWithNormal> oriented_points(n_points);
+    // for (int i = 0; i < n_points; ++i) {
+    //     oriented_points[i].x = points[i].x;
+    //     oriented_points[i].y = points[i].y;
+    //     oriented_points[i].z = points[i].z;
+    //     oriented_points[i].normal = normals[i];
+    // }
 
-    const double resolution = 1.0;
-    VCCSMetric metric(resolution);
-    cl::Array<int> labels, supervoxels;
-    cl::geometry::point_cloud::SupervoxelSegmentation(oriented_points,
-                                                      neighbors,
-                                                      resolution,
-                                                      metric,
-                                                      &supervoxels,
-                                                      &labels);
+    //const double resolution = 1.0;
+    // const int resolution = 200;
+    // VCCSMetric metric(resolution);
+    // cl::Array<int> labels, supervoxels;
+    // cl::geometry::point_cloud::SupervoxelSegmentation(oriented_points,
+    //                                                   neighbors,
+    //                                                   resolution,
+    //                                                   metric,
+    //                                                   &supervoxels,
+    //                                                   &labels);
 
-    int n_supervoxels = supervoxels.size();
-    LOG(INFO) << n_supervoxels << " supervoxels computed.";
-    WritePoints("out.xyz", n_supervoxels, points, labels);
+    // int n_supervoxels = supervoxels.size();
+    // LOG(INFO) << n_supervoxels << " supervoxels computed.";
+    // WritePoints(savename.c_str(), n_supervoxels, idx, points, labels);
+
+    //-------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
+    //-------------------------------------------------------------------------
+
+//    LOG(INFO) << "Start VCCS supervoxel segmentation...";
+//
+//    // Note that, you may need to change the resolution of voxel.
+//    const double voxel_resolution = 0.03;
+//
+//    VCCSSupervoxel vccs(points.begin(), points.end(),
+//                        voxel_resolution,
+//                        resolution);
+//    cl::Array<int> vccs_labels;
+//    cl::Array<VCCSSupervoxel::Supervoxel> vccs_supervoxels;
+//    vccs.Segment(&vccs_labels, &vccs_supervoxels);
+//
+//    n_supervoxels = vccs_supervoxels.size();
+//    LOG(INFO) << n_supervoxels << " supervoxels computed.";
+//    WritePoints("out_vccs.xyz", n_supervoxels, points, vccs_labels);
 
     //-------------------------------------------------------------------------
     //-------------------------------------------------------------------------
     //-------------------------------------------------------------------------
 
-    LOG(INFO) << "Start VCCS supervoxel segmentation...";
-
-    // Note that, you may need to change the resolution of voxel.
-    const double voxel_resolution = 0.03;
-
-    VCCSSupervoxel vccs(points.begin(), points.end(),
-                        voxel_resolution,
-                        resolution);
-    cl::Array<int> vccs_labels;
-    cl::Array<VCCSSupervoxel::Supervoxel> vccs_supervoxels;
-    vccs.Segment(&vccs_labels, &vccs_supervoxels);
-
-    n_supervoxels = vccs_supervoxels.size();
-    LOG(INFO) << n_supervoxels << " supervoxels computed.";
-    WritePoints("out_vccs.xyz", n_supervoxels, points, vccs_labels);
-
-    //-------------------------------------------------------------------------
-    //-------------------------------------------------------------------------
-    //-------------------------------------------------------------------------
 
     LOG(INFO) << "Start KNN variant of VCCS supervoxel segmentation...";
+
+    // const int resolution = 150;
+    const int resolution = atoi(argv[3]);
 
     kdtree.SwapPoints(&points);
     VCCSKNNSupervoxel vccs_knn(kdtree, resolution);
     cl::Array<int> vccs_knn_labels;
     cl::Array<VCCSKNNSupervoxel::Supervoxel> vccs_knn_supervoxels;
     vccs_knn.Segment(&vccs_knn_labels, &vccs_knn_supervoxels);
+
     kdtree.SwapPoints(&points);
 
-    n_supervoxels = vccs_knn_supervoxels.size();
+    int n_supervoxels = vccs_knn_supervoxels.size();
     LOG(INFO) << n_supervoxels << " supervoxels computed.";
-    WritePoints("out_vccs_knn.xyz", n_supervoxels, points, vccs_knn_labels);
+    WritePoints_label(savename.c_str(), n_supervoxels, points, vccs_knn_labels);
+    // WritePoints(savename.c_str(), n_supervoxels, idx, points, vccs_knn_labels);
 
     return 0;
 }

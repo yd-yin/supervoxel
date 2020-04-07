@@ -92,6 +92,52 @@ bool ReadXYZPoints(const char* filename, Array<Point3D<T> >* points,
     return true;
 }
 
+
+/**
+ * Read indexed color points from XYZ file.
+ */
+template <typename T>
+bool ReadXYZPoints(const char* filename, Array<int>* idx, Array<Point3D<T> >* points,
+                   Array<RGB32Color>* colors) {
+    assert(points);
+    assert(colors);
+    assert(idx);
+
+    points->clear();
+    colors->clear();
+    idx->clear();
+
+    std::ifstream in(filename);
+    if (!in) {
+        LOG(INFO) << "Cannot open XYZ file '" << filename << "' for reading.";
+        return false;
+    }
+
+    int n_lines = 0;
+    std::string line;
+    int id;
+    T x, y, z;
+    int r, g, b;
+    while (std::getline(in, line)) {
+        std::istringstream is(line);
+
+        if (!(is >> id) ||!(is >> x) || !(is >> y) || !(is >> z) ||
+            !(is >> r) || !(is >> g) || !(is >> b)) {
+            LOG(INFO) << "Invalid XYZ format at line: " << n_lines++;
+            in.close();
+            return false;
+        }
+        idx->emplace_back(id);
+        points->emplace_back(x, y, z);
+        colors->emplace_back(r, g, b);
+    }
+
+    in.close();
+
+    return true;
+}
+
+
 /**
  * Read oriented points from XYZ file.
  */
@@ -185,6 +231,71 @@ bool WriteXYZPoints(const char* filename,
 
     return true;
 }
+
+
+/**
+ * Write labeled points into XYZ file.
+ */
+template <typename T>
+bool WriteXYZPoints(const char* filename,
+                    const Array<Point3D<T> >& points,
+                    const Array<int>& labels) {
+    assert(points.size() == labels.size());
+
+    std::ofstream out(filename);
+    if (!out) {
+        LOG(INFO) << "Cannot open XYZ file '" << filename
+                  << "' for writing.";
+        return false;
+    }
+
+    out << std::setprecision(12);
+    for (int i = 0; i < points.size(); ++i) {
+        const Point3D<T>& p = points[i];
+        out << p.x << " " << p.y << " " << p.z << " ";
+        const int& l = labels[i];
+        out << static_cast<int>(l) << "\n";
+    }
+
+    out.close();
+
+    return true;
+}
+
+
+/**
+ * Write indexed labeled points into XYZ file.
+ */
+template <typename T>
+bool WriteXYZPoints(const char* filename,
+                    const Array<int>& idx,
+                    const Array<Point3D<T> >& points,
+                    const Array<int>& labels) {
+    assert(points.size() == labels.size());
+    assert(points.size() == idx.size());
+
+    std::ofstream out(filename);
+    if (!out) {
+        LOG(INFO) << "Cannot open XYZ file '" << filename
+                  << "' for writing.";
+        return false;
+    }
+
+    out << std::setprecision(12);
+    for (int i = 0; i < points.size(); ++i) {
+        const int& id = idx[i];
+        const Point3D<T>& p = points[i];
+        out << static_cast<int>(id) << " ";
+        out << p.x << " " << p.y << " " << p.z << " ";
+        const int& l = labels[i];
+        out << static_cast<int>(l) << "\n";
+    }
+
+    out.close();
+
+    return true;
+}
+
 
 /**
  * Write oriented points into XYZ file.

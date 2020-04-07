@@ -114,7 +114,11 @@ void SupervoxelSegmentation(const Array<Point>& points,
 
     // ------------------------------------------------------------------
     // ---------------- Step 1: Find supervoxels. -----------------------
+    int iii = 0;
     for (; ; lambda *= 2.0) {
+        printf("%d \n", iii++);
+        printf("number_of_supervoxels: %d\n", number_of_supervoxels);
+        printf("n_supervoxels: %d\n", n_supervoxels);
         if (supervoxels->size() <= 1) break;
 
         for (int i : *supervoxels) {
@@ -172,7 +176,11 @@ void SupervoxelSegmentation(const Array<Point>& points,
         }
         supervoxels->resize(number_of_supervoxels);
 
-        if (number_of_supervoxels == n_supervoxels) break;
+        if (number_of_supervoxels == n_supervoxels)
+        {
+            // printf("number_of_supervoxels == n_supervoxels, break!\n");
+            break;
+        }
     }
 
     // Assign the label to each point according to its supervoxel ID.
